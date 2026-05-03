@@ -1,0 +1,21 @@
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // حماية الصفحات الخاصة
+  if (pathname.startsWith('/dashboard') || pathname.startsWith('/exam')) {
+    const session = request.cookies.get('next-auth.session-token');
+    
+    if (!session) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ['/dashboard/:path*', '/exam/:path*'],
+};

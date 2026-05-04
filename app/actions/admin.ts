@@ -1,111 +1,184 @@
 "use server";
 
-import { PrismaClient } from "@prisma/client";
-import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
+import { PrismaClient } from "@prisma/client";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
 const prisma = new PrismaClient();
 
-// 🔒 دالة لفحص صلاحية الأدمن
-async function checkAdmin() {
+// Check if user is admin
+export async function checkAdmin() {
   const session = await auth();
-  if (!session || session.user?.role !== "admin") {
+  
+  if (!session || !session.user || (session.user as any).role !== "admin") {
     redirect("/login");
+  }
+  
+  return session;
+}
+
+// Create a new course
+export async function createCourse(formData: FormData) {
+  await checkAdmin();
+  
+  const title = formData.get("title") as string;
+  const subject = formData.get("subject") as string;
+  const description = formData.get("description") as string;
+  const category = formData.get("category") as string;
+  const level = formData.get("level") as string;
+  
+  try {
+    const course = await prisma.course.create({
+       {
+        title,
+        subject,
+        description: description || null,
+        category: category || null,
+        level: level || "beginner",
+        isPublished: false,
+      },
+    });
+    
+    revalidatePath("/admin/courses");
+    return { success: true, courseId: course.id };
+  } catch (error) {
+    console.error("Error creating course:", error);
+    return { success: false, error: "Failed to create course" };
   }
 }
 
-// 📚 إضافة كورس جديد
-export async function createCourse(formData: FormData) {
+// Update a course
+export async function updateCourse(courseId: string, formData: FormData) {
   await checkAdmin();
-
+  
   const title = formData.get("title") as string;
   const subject = formData.get("subject") as string;
   const description = formData.get("description") as string;
-
-  await prisma.course.create({
-    data: {  // ✅ التصحيح: إضافة كلمة data
-      title,
-      subject,
-      description,
-      isPublished: true,
-    },
-  });
-
-  revalidatePath("/admin/courses");
+  const category = formData.get("category") as string;
+  const level = formData.get("level") as string;
+  const isPublished = formData.get("isPublished") === "on";
+  
+  try {
+    const course = await prisma.course.update({
+      where: { id: courseId },
+       {
+        title,
+        subject,
+        description: description || null,
+        category: category || null,
+        level: level || "beginner",
+        isPublished,
+      },
+    });
+    
+    revalidatePath("/admin/courses");
+    return { success: true, course };
+  } catch (error) {
+    console.error("Error updating course:", error);
+    return { success: false, error: "Failed to update course" };
+  }
 }
 
-// 🗑️ حذف كورس
-export async function deleteCourse(id: string) {
+// Delete a course
+export async function deleteCourse(courseId: string) {
   await checkAdmin();
-
-  await prisma.course.delete({
-    where: { id },
-  });
-
-  revalidatePath("/admin/courses");
+  
+  try {
+    await prisma.course.delete({
+      where: { id: courseId },
+    });
+    
+    revalidatePath("/admin/courses");
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting course:", error);
+    return { success: false, error: "Failed to delete course" };
+  }
 }
 
-// 📝 إضافة امتحان جديد
+// Publish/Unpublish a course
+export async function toggleCoursePublish(courseId: string, publish: boolean) {
+  await checkAdmin();
+  
+  try {
+    const course = await prisma.course.update({
+      where: { id: courseId },
+       { isPublished: publish },
+    });
+    
+    revalidatePath("/admin/courses");
+    return { success: true, course };
+  } catch (error) {
+    console.error("Error toggling course publish status:", error);
+    return { success: false, error: "Failed to update course" };
+  }
+}
+
+// Create a new exam
 export async function createExam(formData: FormData) {
   await checkAdmin();
-
+  
   const title = formData.get("title") as string;
   const subject = formData.get("subject") as string;
   const duration = parseInt(formData.get("duration") as string);
-  const totalMarks = parseInt(formData.get("totalMarks") as string);
-
-  await prisma.exam.create({
-    data: {  // ✅ التصحيح: إضافة كلمة data
-      title,
-      subject,
-      duration,
-      totalMarks,
-      isPublished: true,
-    },
-  });
-
-  revalidatePath("/admin/exams");
+  const totalQuestions = parseInt(formData.get("totalQuestions") as string);
+  
+  try {
+    const exam = await prisma.exam.create({
+       {
+        title,
+        subject,
+        duration,
+        totalQuestions,
+      },
+    });
+    
+    revalidatePath("/admin/exams");
+    return { success: true, examId: exam.id };
+  } catch (error) {
+    console.error("Error creating exam:", error);
+    return { success: false, error: "Failed to create exam" };
+  }
 }
 
-// 🗑️ حذف امتحان
-export async function deleteExam(id: string) {
+// Get all courses (admin view)
+export async function getAllCourses() {
   await checkAdmin();
-
-  await prisma.exam.delete({
-    where: { id },
-  });
-
-  revalidatePath("/admin/exams");
-}
-//  إضافة درس جديد
-export async function createLesson(formData: FormData) {
-  await checkAdmin();
-
-  const title = formData.get("title") as string;
-  const videoUrl = formData.get("videoUrl") as string;
-  const courseId = formData.get("courseId") as string;
-  const description = formData.get("description") as string;
-
-  await prisma.lesson.create({
-  data: {
-    title,
-    videoUrl,
-    description,
-    courseId,
-  },
-});
-
-  revalidatePath(`/admin/courses/${courseId}`);
+  
+  try {
+    const courses = await prisma.course.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        _count: {
+          select: { lessons: true, exams: true },
+        },
+      },
+    });
+    
+    return { success: true, courses };
+  } catch (error) {
+    console.error("Error fetching courses:", error);
+    return { success: false, error: "Failed to fetch courses" };
+  }
 }
 
-// 🗑️ حذف درس
-export async function deleteLesson(id: string, courseId: string) {
+// Get course by ID
+export async function getCourseById(courseId: string) {
   await checkAdmin();
-
-  await prisma.lesson.delete({
-    where: { id },
-  });
-
-  revalidatePath(`/admin/courses/${courseId}`);
+  
+  try {
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      include: {
+        lessons: true,
+        exams: true,
+      },
+    });
+    
+    return { success: true, course };
+  } catch (error) {
+    console.error("Error fetching course:", error);
+    return { success: false, error: "Failed to fetch course" };
+  }
 }

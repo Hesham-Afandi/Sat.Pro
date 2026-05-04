@@ -30,7 +30,7 @@ export async function createCourse(formData: FormData) {
   
   try {
     const course = await prisma.course.create({
-       {
+      data: {  // ✅ مهم جداً: كلمة "data:"
         title,
         subject,
         description: description || null,
@@ -62,7 +62,7 @@ export async function updateCourse(courseId: string, formData: FormData) {
   try {
     const course = await prisma.course.update({
       where: { id: courseId },
-       {
+      data: {  // ✅ مهم جداً: كلمة "data:"
         title,
         subject,
         description: description || null,
@@ -104,7 +104,7 @@ export async function toggleCoursePublish(courseId: string, publish: boolean) {
   try {
     const course = await prisma.course.update({
       where: { id: courseId },
-       { isPublished: publish },
+      data: { isPublished: publish },  // ✅ مهم جداً: كلمة "data:"
     });
     
     revalidatePath("/admin/courses");
@@ -126,7 +126,7 @@ export async function createExam(formData: FormData) {
   
   try {
     const exam = await prisma.exam.create({
-       {
+      data: {  // ✅ مهم جداً: كلمة "data:"
         title,
         subject,
         duration,

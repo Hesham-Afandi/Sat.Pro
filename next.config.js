@@ -1,11 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  typescript: {
-    ignoreBuildErrors: true,
+  reactStrictMode: true,
+  
+  // إعدادات الصور عشان متحصلش مشاكل مع الروابط الخارجية
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+    ],
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-}
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;

@@ -2,12 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   
-  // تجاهل أخطاء TypeScript و ESLint في الـ build
+  // تجاهل أخطاء TypeScript فقط
   typescript: {
     ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
   },
   
   images: {

@@ -1,3 +1,3 @@
-import { handlers } from "@/auth"; // تأكد إن المسار صح
+import { handlers } from "@/auth";
 
 export const { GET, POST } = handlers;

@@ -23,7 +23,7 @@ model User {
 
   accounts      Account[]
   sessions      Session[]
-  courses       Course[]
+  courses       Course[]  // ✅ علاقة صحيحة مع Course
 }
 
 model Course {
@@ -36,6 +36,10 @@ model Course {
   isPublished Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  // ✅ العلاقة العكسية مع User (مهمة جداً)
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   lessons     Lesson[]
   exams       Exam[]
@@ -73,12 +77,12 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?  // ✅ شيلنا @db.Text
+  access_token      String?  // ✅ شيلنا @db.Text
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?  // ✅ شيلنا @db.Text
   session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

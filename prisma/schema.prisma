@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -23,7 +23,7 @@ model User {
 
   accounts      Account[]
   sessions      Session[]
-  courses       Course[]  // ✅ علاقة صحيحة مع Course
+  courses       Course[] // ✅ علاقة صحيحة مع Course
 }
 
 model Course {
@@ -37,7 +37,7 @@ model Course {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // ✅ العلاقة العكسية مع User (مهمة جداً)
+  // ✅ العلاقة العكسية مع User (تم إصلاح مشكلة Missing relation)
   userId      String?
   user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
@@ -77,12 +77,12 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String?  // ✅ شيلنا @db.Text
-  access_token      String?  // ✅ شيلنا @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String?  // ✅ شيلنا @db.Text
+  id_token          String?
   session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

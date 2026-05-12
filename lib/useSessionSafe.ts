@@ -2,19 +2,30 @@
 // Hook آمن بيرجع قيمة افتراضية لما الـ Auth يكون معطل
 
 export function useSessionSafe() {
-  try {
-    // لو الـ NextAuth شغال، هيعمل الـ import عادي
-    const { useSession } = require("next-auth/react");
-    return useSession();
-  } catch {
-    // لو الـ Auth معطل، نرجع قيمة افتراضية
-    return {
-      data: {
-        user: { id: "demo", email: "demo@example.com", name: "Demo User" },
-        expires: new Date().toISOString(),
+  return {
+    data: {
+      user: { 
+        id: "demo-user", 
+        email: "demo@example.com", 
+        name: "مستخدم تجريبي",
+        role: "user"
       },
-      status: "authenticated",
-      update: () => {},
-    };
-  }
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    },
+    status: "authenticated" as const,
+    update: () => Promise.resolve(),
+  };
+}
+
+// ✅ دالة مساعدة عشان تجيب الـ session مباشرة
+export function getSessionSafe() {
+  return {
+    user: { 
+      id: "demo-user", 
+      email: "demo@example.com", 
+      name: "مستخدم تجريبي",
+      role: "user"
+    },
+    expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+  };
 }

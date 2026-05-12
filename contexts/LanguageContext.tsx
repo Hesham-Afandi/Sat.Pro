@@ -1,36 +1,35 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
+"use client";
 
-// ✅ استورد الـ LanguageProvider من المكان الصح
-import { LanguageProvider } from "@/contexts/LanguageContext";
+import { createContext, useContext, useState, ReactNode, useMemo } from "react";
 
-const inter = Inter({ 
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-inter",
-});
-
-export const metadata: Metadata = {
-  title: "SAT PRO | منصة تحضير اختبار SAT",
-  description: "منصة تعليمية متكاملة لتحضير اختبار SAT",
+// ✅ تعريف نوع الـ Context
+type LanguageContextType = {
+  language: string;
+  setLanguage: (lang: string) => void;
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+// ✅ إنشاء الـ Context بقيمة افتراضية
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+
+// ✅ الـ Provider اللي هيغلف التطبيق
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  const [language, setLanguage] = useState<string>("ar");
+
+  // ✅ تحسين الأداء: تمنع إعادة الـ Render غير الضرورية
+  const value = useMemo(() => ({ language, setLanguage }), [language]);
+
   return (
-    <html lang="ar" dir="rtl" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased bg-gray-50 text-gray-900`}>
-        
-        {/* ✅ دي النقطة المهمة: لازم الـ Provider يغلف الـ children */}
-        <LanguageProvider>
-          {children}
-        </LanguageProvider>
-        
-      </body>
-    </html>
+    <LanguageContext.Provider value={value}>
+      {children}
+    </LanguageContext.Provider>
   );
+}
+
+// ✅ الـ Hook اللي هتستخدمه في الصفحات عشان تجيب اللغة
+export function useLanguage() {
+  const context = useContext(LanguageContext);
+  if (context === undefined) {
+    throw new Error("useLanguage must be used within a LanguageProvider");
+  }
+  return context;
 }

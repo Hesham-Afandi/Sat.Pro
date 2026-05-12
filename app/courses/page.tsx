@@ -1,67 +1,217 @@
-﻿"use client";
-
+import { PrismaClient } from "@prisma/client";
 import Link from "next/link";
-import Logo from "@/components/Logo";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { useSession } from "next-auth/react";
-import { coursesData } from "@/data/courses";
 
-export default function CoursesPage() {
-  const { t, dir } = useLanguage();
-  const {  session, status } = useSession();
-  const courses = Object.values(coursesData);
+// ✅ إنشاء عميل Prisma (للاستخدام داخل الـ Server Component)
+const prisma = new PrismaClient();
+
+// ✅ تعريف نوع الكورس عشان الـ TypeScript يفرح
+type Course = {
+  id: string;
+  title: string;
+  description: string | null;
+  subject: string | null;
+  level: string;
+  isPublished: boolean;
+  image?: string;
+};
+
+// ✅ دالة لجلب الكورسات من الداتابيز
+async function getCourses(): Promise<Course[]> {
+  try {
+    const courses = await prisma.course.findMany({
+      where: {
+        isPublished: true, // نجيب الكورسات المنشورة بس
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+    return courses;
+  } catch (error) {
+    console.error("Error fetching courses:", error);
+    return []; // لو فيه خطأ، نرجع مصفوفة فاضية عشان الصفحة متقعش
+  }
+}
+
+// ✅ المكون الرئيسي للصفحة
+export default async function CoursesPage() {
+  const courses = await getCourses();
 
   return (
-    <div dir={dir} className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      <header className="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/">
-            <Logo className="w-16 h-16" />
-          </Link>
-          <div className="flex items-center gap-4">
-            <LanguageSwitcher />
-            {status === "loading" ? (
-              <div className="w-24 h-10 bg-gray-200 rounded-full animate-pulse"></div>
-            ) : session ? (
-              <Link href="/dashboard" className="px-6 py-2 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition">
-                Dashboard
-              </Link>
-            ) : (
-              <Link href="/login" className="px-6 py-2 border-2 border-blue-600 text-blue-600 rounded-full font-bold hover:bg-blue-50 transition">
-                Sign In
-              </Link>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 py-12">
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8" dir="rtl">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* العنوان */}
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-gray-900 mb-4">All Courses</h1>
-          <p className="text-xl text-gray-600">Choose a subject to start learning</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            الكورسات المتاحة
+          </h1>
+          <p className="text-lg text-gray-600">
+            اختر الكورس المناسب وابدأ رحلة التحضير لاختبار الـ SAT
+          </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {courses.map((course) => (
-            <div key={course.id} className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl hover:scale-105 transition transform">
-              <div className={`h-48 bg-gradient-to-br ${course.color} flex items-center justify-center`}>
-                <div className="text-8xl">{course.image}</div>
-              </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{course.title}</h3>
-                <p className="text-gray-600 text-sm mb-4">{course.instructor}</p>
-                <Link 
-                  href={`/courses/${course.id}`}
-                  className="block w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-center hover:shadow-lg hover:scale-105 transition transform"
-                >
-                  View Course
-                </Link>
-              </div>
-            </div>
-          ))}
+        {/* قائمة الكورسات */}
+        {courses.length === 0 ? (
+          <div className="text-center py-20 bg-white rounded-2xl shadow-sm border border-gray-100">
+            <p className="text-gray-500 text-lg">
+              🎉 لا توجد كورسات منشورة حالياً. عد قريباً!
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {courses.map((course) => (
+              <Link 
+                href={`/courses/${course.id}`} 
+                key={course.id}
+                className="group block bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden"
+              >
+                {/* صورة الكورس (مكان صورة افتراضية) */}
+                <div className="h-48 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                  <span className="text-white text-5xl font-bold opacity-20">
+                    {course.subject?.charAt(0) || "S"}
+                  </span>
+                </div>
+
+                {/* محتوى الكارد */}
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="px-3 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full">
+                      {course.level === "beginner" ? "مبتدئ" : 
+                       course.level === "intermediate" ? "متوسط" : "متقدم"}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      {course.subject || "عام"}
+                    </span>
+                  </div>
+
+                  <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">
+                    {course.title}
+                  </h3>
+
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                    {course.description || "وصف الكورس سيظهر هنا..."}
+                  </p>
+
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                    <span className="text-sm font-medium text-indigo-600">
+                      ابدأ الآن ←
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}import { PrismaClient } from "@prisma/client";
+import Link from "next/link";
+
+// ✅ إنشاء عميل Prisma (للاستخدام داخل الـ Server Component)
+const prisma = new PrismaClient();
+
+// ✅ تعريف نوع الكورس عشان الـ TypeScript يفرح
+type Course = {
+  id: string;
+  title: string;
+  description: string | null;
+  subject: string | null;
+  level: string;
+  isPublished: boolean;
+  image?: string;
+};
+
+// ✅ دالة لجلب الكورسات من الداتابيز
+async function getCourses(): Promise<Course[]> {
+  try {
+    const courses = await prisma.course.findMany({
+      where: {
+        isPublished: true, // نجيب الكورسات المنشورة بس
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+    return courses;
+  } catch (error) {
+    console.error("Error fetching courses:", error);
+    return []; // لو فيه خطأ، نرجع مصفوفة فاضية عشان الصفحة متقعش
+  }
+}
+
+// ✅ المكون الرئيسي للصفحة
+export default async function CoursesPage() {
+  const courses = await getCourses();
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8" dir="rtl">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* العنوان */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            الكورسات المتاحة
+          </h1>
+          <p className="text-lg text-gray-600">
+            اختر الكورس المناسب وابدأ رحلة التحضير لاختبار الـ SAT
+          </p>
         </div>
-      </main>
+
+        {/* قائمة الكورسات */}
+        {courses.length === 0 ? (
+          <div className="text-center py-20 bg-white rounded-2xl shadow-sm border border-gray-100">
+            <p className="text-gray-500 text-lg">
+              🎉 لا توجد كورسات منشورة حالياً. عد قريباً!
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {courses.map((course) => (
+              <Link 
+                href={`/courses/${course.id}`} 
+                key={course.id}
+                className="group block bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden"
+              >
+                {/* صورة الكورس (مكان صورة افتراضية) */}
+                <div className="h-48 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                  <span className="text-white text-5xl font-bold opacity-20">
+                    {course.subject?.charAt(0) || "S"}
+                  </span>
+                </div>
+
+                {/* محتوى الكارد */}
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="px-3 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full">
+                      {course.level === "beginner" ? "مبتدئ" : 
+                       course.level === "intermediate" ? "متوسط" : "متقدم"}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      {course.subject || "عام"}
+                    </span>
+                  </div>
+
+                  <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">
+                    {course.title}
+                  </h3>
+
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                    {course.description || "وصف الكورس سيظهر هنا..."}
+                  </p>
+
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                    <span className="text-sm font-medium text-indigo-600">
+                      ابدأ الآن ←
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

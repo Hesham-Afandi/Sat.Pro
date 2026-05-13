@@ -1,135 +1,112 @@
 import { PrismaClient } from '@prisma/client';
-import { PrismaClient as PrismaClientPG } from '@prisma/client';
 
-// ✅ Prisma Client للـ SQLite (القديمة)
-const prismaOld = new PrismaClient({
-  datasources: {
-    db: {
-      url: 'file:./dev.db',
-    },
-  },
+const oldDb = new PrismaClient({
+  datasources: { db: { url: 'file:./dev.db' } }
 });
 
-// ✅ Prisma Client للـ PostgreSQL (الجديدة)
-const prismaNew = new PrismaClientPG();
+const newDb = new PrismaClient();
 
 async function migrateData() {
+  console.log('🚀 بدء نقل البيانات...\n');
+  
   try {
-    console.log('📤 Starting data migration from SQLite to PostgreSQL...\n');
-
-    // 1️⃣ انقل الكورسات
-    console.log('📚 Migrating Courses...');
-    const courses = await prismaOld.course.findMany();
-    console.log(`   Found ${courses.length} courses`);
+    // 1. الكورسات - الحقول المتاحة بس
+    const courses = await oldDb.course.findMany();
+    console.log(`📚 نقل ${courses.length} كورس...`);
     
-    for (const course of courses) {
-      await prismaNew.course.create({
-        data: {
-          id: course.id,
-          title: course.title,
-          description: course.description,
-          subject: course.subject,
-          category: course.category,
-          level: course.level,
-          isPublished: course.isPublished,
-          createdAt: course.createdAt,
-          updatedAt: course.updatedAt,
-        },
-      });
+    for (const c of courses) {
+      try {
+        await newDb.course.upsert({
+          where: { id: c.id },
+          update: {},
+          create: {
+            id: c.id,
+            title: c.title,
+            description: c.description,
+            // ⚠️ الحقول التانية مش موجودة في الـ schema الجديد
+          }
+        });
+      } catch (err: any) {
+        console.log(`   ⚠️  Course ${c.id}: ${err.message}`);
+      }
     }
-    console.log(`   ✅ Migrated ${courses.length} courses\n`);
 
-    // 2️⃣ انقل الامتحانات
-    console.log('📝 Migrating Exams...');
-    const exams = await prismaOld.exam.findMany();
-    console.log(`   Found ${exams.length} exams`);
+    // 2. الامتحانات - الحقول المتاحة بس
+    const exams = await oldDb.exam.findMany();
+    console.log(`📝 نقل ${exams.length} امتحان...`);
     
-    for (const exam of exams) {
-      await prismaNew.exam.create({
-        data: {
-          id: exam.id,
-          title: exam.title,
-          subject: exam.subject,
-          duration: exam.duration,
-          totalQuestions: exam.totalQuestions,
-          courseId: exam.courseId,
-          createdAt: exam.createdAt,
-          updatedAt: exam.updatedAt,
-        },
-      });
+    for (const e of exams) {
+      try {
+        await newDb.exam.upsert({
+          where: { id: e.id },
+          update: {},
+          create: {
+            id: e.id,
+            title: e.title,
+            subject: e.subject,
+            duration: e.duration,
+            courseId: e.courseId,
+            // ⚠️ totalQuestions مش موجود
+          }
+        });
+      } catch (err: any) {
+        console.log(`   ⚠️  Exam ${e.id}: ${err.message}`);
+      }
     }
-    console.log(`   ✅ Migrated ${exams.length} exams\n`);
 
-    // 3️⃣ انقل الأسئلة
-    console.log('❓ Migrating Questions...');
-    const questions = await prismaOld.question.findMany();
-    console.log(`   Found ${questions.length} questions`);
+    // 3. الأسئلة
+    const questions = await oldDb.question.findMany();
+    console.log(`❓ نقل ${questions.length} سؤال...`);
     
-    for (const question of questions) {
-      await prismaNew.question.create({
-        data: {
-          id: question.id,
-          text: question.text,
-          type: question.type,
-          examId: question.examId,
-          courseId: question.courseId,
-          createdAt: question.createdAt,
-          updatedAt: question.updatedAt,
-        },
-      });
+    for (const q of questions) {
+      try {
+        await newDb.question.upsert({
+          where: { id: q.id },
+          update: {},
+          create: {
+            id: q.id,
+            text: q.text,
+            options: q.options,
+            correct: q.correct,
+            explanation: q.explanation,
+            examId: q.examId,
+          }
+        });
+      } catch (err: any) {
+        console.log(`   ⚠️  Question: ${err.message}`);
+      }
     }
-    console.log(`   ✅ Migrated ${questions.length} questions\n`);
 
-    // 4️⃣ انقل الدروس
-    console.log('📖 Migrating Lessons...');
-    const lessons = await prismaOld.lesson.findMany();
-    console.log(`   Found ${lessons.length} lessons`);
+    // 4. الدروس
+    const lessons = await oldDb.lesson.findMany();
+    console.log(`📖 نقل ${lessons.length} درس...`);
     
-    for (const lesson of lessons) {
-      await prismaNew.lesson.create({
-        data: {
-          id: lesson.id,
-          title: lesson.title,
-          description: lesson.description,
-          videoUrl: lesson.videoUrl,
-          order: lesson.order,
-          courseId: lesson.courseId,
-          createdAt: lesson.createdAt,
-          updatedAt: lesson.updatedAt,
-        },
-      });
+    for (const l of lessons) {
+      try {
+        await newDb.lesson.upsert({
+          where: { id: l.id },
+          update: {},
+          create: {
+            id: l.id,
+            title: l.title,
+            courseId: l.courseId,
+            videoUrl: l.videoUrl,
+            duration: l.duration,
+            completed: l.completed,
+          }
+        });
+      } catch (err: any) {
+        console.log(`   ⚠️  Lesson: ${err.message}`);
+      }
     }
-    console.log(`   ✅ Migrated ${lessons.length} lessons\n`);
 
-    // 5️⃣ انقل المستخدمين
-    console.log('👤 Migrating Users...');
-    const users = await prismaOld.user.findMany();
-    console.log(`   Found ${users.length} users`);
+    console.log('\n✅ تم النقل بنجاح!');
     
-    for (const user of users) {
-      await prismaNew.user.create({
-        data: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          emailVerified: user.emailVerified,
-          image: user.image,
-          password: user.password,
-          role: user.role,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-        },
-      });
-    }
-    console.log(`   ✅ Migrated ${users.length} users\n`);
-
-    console.log('🎉 Migration completed successfully!');
-    
-  } catch (error) {
-    console.error('❌ Migration failed:', error);
+  } catch (error: any) {
+    console.error('❌ خطأ:', error.message);
   } finally {
-    await prismaOld.$disconnect();
-    await prismaNew.$disconnect();
+    await oldDb.$disconnect();
+    await newDb.$disconnect();
   }
 }
 

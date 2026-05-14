@@ -1,7 +1,6 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { PrismaClient } from "@prisma/client";
 import Link from "next/link";
 
 // تعريف الأنواع
@@ -18,6 +17,14 @@ interface Course {
 // بيانات الفلاتر
 const grades = [
   { value: 'all', label: 'كل الصفوف' },
+  { value: 'grade1', label: 'الصف الأول' },
+  { value: 'grade2', label: 'الصف الثاني' },
+  { value: 'grade3', label: 'الصف الثالث' },
+  { value: 'grade4', label: 'الصف الرابع' },
+  { value: 'grade5', label: 'الصف الخامس' },
+  { value: 'grade6', label: 'الصف السادس' },
+  { value: 'grade7', label: 'الصف السابع' },
+  { value: 'grade8', label: 'الصف الثامن' },
   { value: 'grade9', label: 'الصف التاسع' },
   { value: 'grade10', label: 'الصف العاشر' },
   { value: 'grade11', label: 'الحادي عشر' },
@@ -28,17 +35,15 @@ const grades = [
 
 const semesters = [
   { value: 'all', label: 'كل الفصول' },
-  { value: 'first', label: 'الفصل الأول' },
-  { value: 'second', label: 'الفصل الثاني' },
-  { value: 'summer', label: 'الصيفي' },
+  { value: 'first', label: 'الأول' },
+  { value: 'second', label: 'الثاني' },
+  { value: 'third', label: 'الثالث' },
 ];
 
 const paths = [
   { value: 'all', label: 'كل المسارات' },
-  { value: 'scientific', label: 'علمي' },
-  { value: 'literary', label: 'أدبي' },
-  { value: 'technical', label: 'تقني' },
-  { value: 'international', label: 'دولي' },
+  { value: 'general', label: 'عام' },
+  { value: 'advanced', label: 'متقدم' },
 ];
 
 const subjects = [
@@ -51,6 +56,7 @@ const subjects = [
   { value: 'Biology', label: 'الأحياء' },
   { value: 'History', label: 'التاريخ' },
   { value: 'Geography', label: 'الجغرافيا' },
+  { value: 'Science', label: 'العلوم' },
 ];
 
 export default function CoursesPage() {
@@ -72,7 +78,6 @@ export default function CoursesPage() {
         const res = await fetch('/api/courses');
         const data = await res.json();
         setCourses(data);
-        setFilteredCourses(data);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching courses:', error);
@@ -86,32 +91,37 @@ export default function CoursesPage() {
   useEffect(() => {
     let filtered = [...courses];
 
-    if (selectedGrade !== 'all') {
+    // لو مش مختار SAT، مظهرش الكورسات
+    if (selectedGrade !== 'sat' && selectedGrade !== 'act') {
+      setFilteredCourses([]);
+      return;
+    }
+
+    // فلتر الصف (SAT أو ACT)
+    if (selectedGrade === 'sat' || selectedGrade === 'act') {
       filtered = filtered.filter(course => 
-        course.level.includes(selectedGrade) || 
-        course.category?.includes(selectedGrade)
+        course.level?.toLowerCase().includes(selectedGrade) || 
+        course.category?.toLowerCase().includes(selectedGrade) ||
+        course.title?.toLowerCase().includes(selectedGrade)
       );
     }
 
-    if (selectedSemester !== 'all') {
-      filtered = filtered.filter(course => 
-        course.description?.includes(selectedSemester) ||
-        course.title?.includes(selectedSemester)
-      );
-    }
-
+    // فلتر المسار
     if (selectedPath !== 'all') {
       filtered = filtered.filter(course => 
-        course.category?.includes(selectedPath)
+        course.category?.toLowerCase().includes(selectedPath) ||
+        course.level?.toLowerCase().includes(selectedPath)
       );
     }
 
+    // فلتر المادة
     if (selectedSubject !== 'all') {
       filtered = filtered.filter(course => 
         course.subject === selectedSubject
       );
     }
 
+    // البحث النصي
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(course =>
@@ -121,7 +131,7 @@ export default function CoursesPage() {
     }
 
     setFilteredCourses(filtered);
-  }, [selectedGrade, selectedSemester, selectedPath, selectedSubject, searchQuery, courses]);
+  }, [selectedGrade, selectedPath, selectedSubject, searchQuery, courses]);
 
   if (loading) {
     return (
@@ -146,9 +156,9 @@ export default function CoursesPage() {
 
         {/* الفلاتر */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* البحث */}
-            <div className="lg:col-span-2">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 🔍 ابحث عن كورس
               </label>
@@ -174,24 +184,6 @@ export default function CoursesPage() {
                 {grades.map(grade => (
                   <option key={grade.value} value={grade.value}>
                     {grade.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* الفصل */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                🗓️ الفصل
-              </label>
-              <select
-                value={selectedSemester}
-                onChange={(e) => setSelectedSemester(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              >
-                {semesters.map(semester => (
-                  <option key={semester.value} value={semester.value}>
-                    {semester.label}
                   </option>
                 ))}
               </select>
@@ -234,28 +226,66 @@ export default function CoursesPage() {
             </div>
           </div>
 
+          {/* رسالة توضيحية */}
+          <div className="mt-4 p-4 bg-blue-50 border-r-4 border-blue-500 rounded-lg">
+            <p className="text-sm text-blue-800">
+              💡 <strong>ملاحظة:</strong> اختر <strong>SAT</strong> أو <strong>ACT</strong> من قائمة الصفوف لعرض الكورسات المتاحة
+            </p>
+          </div>
+
           {/* زر إعادة تعيين الفلاتر */}
           <div className="mt-4 flex justify-between items-center">
             <p className="text-sm text-gray-600">
-              تم العثور على <span className="font-bold text-indigo-600">{filteredCourses.length}</span> كورس
+              {selectedGrade === 'sat' || selectedGrade === 'act' ? (
+                <>
+                  تم العثور على <span className="font-bold text-indigo-600">{filteredCourses.length}</span> كورس
+                </>
+              ) : (
+                <>
+                  اختر <span className="font-bold text-indigo-600">SAT</span> أو <span className="font-bold text-indigo-600">ACT</span> لعرض الكورسات
+                </>
+              )}
             </p>
             <button
               onClick={() => {
                 setSelectedGrade('all');
-                setSelectedSemester('all');
                 setSelectedPath('all');
                 setSelectedSubject('all');
                 setSearchQuery('');
               }}
               className="px-4 py-2 text-sm text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition"
             >
-              🔄 إعادة تعيين الفلاتر
+              🔄 إعادة تعيين
             </button>
           </div>
         </div>
 
         {/* الكورسات */}
-        {filteredCourses.length === 0 ? (
+        {selectedGrade !== 'sat' && selectedGrade !== 'act' ? (
+          <div className="bg-white rounded-2xl shadow-sm border-2 border-dashed border-gray-200 p-12 text-center">
+            <div className="text-6xl mb-4">📋</div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              اختر SAT أو ACT لعرض الكورسات
+            </h3>
+            <p className="text-gray-500 mb-4">
+              الكورسات متاحة فقط لاختبارات SAT و ACT
+            </p>
+            <div className="flex justify-center gap-4 mt-6">
+              <button
+                onClick={() => setSelectedGrade('sat')}
+                className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-bold"
+              >
+                عرض كورسات SAT
+              </button>
+              <button
+                onClick={() => setSelectedGrade('act')}
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-bold"
+              >
+                عرض كورسات ACT
+              </button>
+            </div>
+          </div>
+        ) : filteredCourses.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-sm border-2 border-dashed border-gray-200 p-12 text-center">
             <div className="text-6xl mb-4">📚</div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">
@@ -277,8 +307,8 @@ export default function CoursesPage() {
                   {/* الشارات */}
                   <div className="flex items-center justify-between mb-3">
                     <span className="px-3 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full">
-                      {course.level === 'beginner' ? 'مبتدئ' : 
-                       course.level === 'intermediate' ? 'متوسط' : 'متقدم'}
+                      {course.level === 'beginner' || course.level?.includes('general') ? 'عام' : 
+                       course.level?.includes('advanced') ? 'متقدم' : 'متخصص'}
                     </span>
                     <span className="text-sm text-gray-500">
                       {course.subject || 'عام'}

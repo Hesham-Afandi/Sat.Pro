@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from "next/link";
 
-// تعريف الأنواع
 interface Course {
   id: string;
   title: string;
@@ -14,51 +13,6 @@ interface Course {
   isPublished: boolean;
 }
 
-// بيانات الفلاتر
-const grades = [
-  { value: 'all', label: 'كل الصفوف' },
-  { value: 'grade1', label: 'الصف الأول' },
-  { value: 'grade2', label: 'الصف الثاني' },
-  { value: 'grade3', label: 'الصف الثالث' },
-  { value: 'grade4', label: 'الصف الرابع' },
-  { value: 'grade5', label: 'الصف الخامس' },
-  { value: 'grade6', label: 'الصف السادس' },
-  { value: 'grade7', label: 'الصف السابع' },
-  { value: 'grade8', label: 'الصف الثامن' },
-  { value: 'grade9', label: 'الصف التاسع' },
-  { value: 'grade10', label: 'الصف العاشر' },
-  { value: 'grade11', label: 'الحادي عشر' },
-  { value: 'grade12', label: 'الثاني عشر' },
-  { value: 'sat', label: 'SAT' },
-  { value: 'act', label: 'ACT' },
-];
-
-const semesters = [
-  { value: 'all', label: 'كل الفصول' },
-  { value: 'first', label: 'الأول' },
-  { value: 'second', label: 'الثاني' },
-  { value: 'third', label: 'الثالث' },
-];
-
-const paths = [
-  { value: 'all', label: 'كل المسارات' },
-  { value: 'general', label: 'عام' },
-  { value: 'advanced', label: 'متقدم' },
-];
-
-const subjects = [
-  { value: 'all', label: 'كل المواد' },
-  { value: 'Math', label: 'الرياضيات' },
-  { value: 'English', label: 'اللغة الإنجليزية' },
-  { value: 'Arabic', label: 'اللغة العربية' },
-  { value: 'Physics', label: 'الفيزياء' },
-  { value: 'Chemistry', label: 'الكيمياء' },
-  { value: 'Biology', label: 'الأحياء' },
-  { value: 'History', label: 'التاريخ' },
-  { value: 'Geography', label: 'الجغرافيا' },
-  { value: 'Science', label: 'العلوم' },
-];
-
 export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
@@ -66,7 +20,6 @@ export default function CoursesPage() {
   
   // الفلاتر
   const [selectedGrade, setSelectedGrade] = useState('all');
-  const [selectedSemester, setSelectedSemester] = useState('all');
   const [selectedPath, setSelectedPath] = useState('all');
   const [selectedSubject, setSelectedSubject] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -77,6 +30,7 @@ export default function CoursesPage() {
       try {
         const res = await fetch('/api/courses');
         const data = await res.json();
+        console.log('📦 Courses fetched:', data.length);
         setCourses(data);
         setLoading(false);
       } catch (error) {
@@ -89,21 +43,27 @@ export default function CoursesPage() {
 
   // تطبيق الفلاتر
   useEffect(() => {
+    console.log('🔍 Filtering... selectedGrade:', selectedGrade);
+    
     let filtered = [...courses];
 
-    // لو مش مختار SAT، مظهرش الكورسات
+    // ⚠️ لو مش مختار SAT أو ACT، مظهرش الكورسات
     if (selectedGrade !== 'sat' && selectedGrade !== 'act') {
+      console.log('❌ Not SAT/ACT - hiding courses');
       setFilteredCourses([]);
       return;
     }
 
-    // فلتر الصف (SAT أو ACT)
+    // فلتر SAT/ACT
     if (selectedGrade === 'sat' || selectedGrade === 'act') {
-      filtered = filtered.filter(course => 
-        course.level?.toLowerCase().includes(selectedGrade) || 
-        course.category?.toLowerCase().includes(selectedGrade) ||
-        course.title?.toLowerCase().includes(selectedGrade)
-      );
+      filtered = filtered.filter(course => {
+        const match = 
+          course.level?.toLowerCase().includes(selectedGrade) || 
+          course.category?.toLowerCase().includes(selectedGrade) ||
+          course.title?.toLowerCase().includes(selectedGrade);
+        console.log(`Course: ${course.title} - Match: ${match}`);
+        return match;
+      });
     }
 
     // فلتر المسار
@@ -130,6 +90,7 @@ export default function CoursesPage() {
       );
     }
 
+    console.log('✅ Filtered courses:', filtered.length);
     setFilteredCourses(filtered);
   }, [selectedGrade, selectedPath, selectedSubject, searchQuery, courses]);
 
@@ -181,11 +142,21 @@ export default function CoursesPage() {
                 onChange={(e) => setSelectedGrade(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
-                {grades.map(grade => (
-                  <option key={grade.value} value={grade.value}>
-                    {grade.label}
-                  </option>
-                ))}
+                <option value="all">كل الصفوف</option>
+                <option value="grade1">الصف الأول</option>
+                <option value="grade2">الصف الثاني</option>
+                <option value="grade3">الصف الثالث</option>
+                <option value="grade4">الصف الرابع</option>
+                <option value="grade5">الصف الخامس</option>
+                <option value="grade6">الصف السادس</option>
+                <option value="grade7">الصف السابع</option>
+                <option value="grade8">الصف الثامن</option>
+                <option value="grade9">الصف التاسع</option>
+                <option value="grade10">الصف العاشر</option>
+                <option value="grade11">الحادي عشر</option>
+                <option value="grade12">الثاني عشر</option>
+                <option value="sat">SAT</option>
+                <option value="act">ACT</option>
               </select>
             </div>
 
@@ -199,11 +170,9 @@ export default function CoursesPage() {
                 onChange={(e) => setSelectedPath(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
-                {paths.map(path => (
-                  <option key={path.value} value={path.value}>
-                    {path.label}
-                  </option>
-                ))}
+                <option value="all">كل المسارات</option>
+                <option value="general">عام</option>
+                <option value="advanced">متقدم</option>
               </select>
             </div>
 
@@ -217,11 +186,13 @@ export default function CoursesPage() {
                 onChange={(e) => setSelectedSubject(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
-                {subjects.map(subject => (
-                  <option key={subject.value} value={subject.value}>
-                    {subject.label}
-                  </option>
-                ))}
+                <option value="all">كل المواد</option>
+                <option value="Math">الرياضيات</option>
+                <option value="English">اللغة الإنجليزية</option>
+                <option value="Arabic">اللغة العربية</option>
+                <option value="Physics">الفيزياء</option>
+                <option value="Chemistry">الكيمياء</option>
+                <option value="Biology">الأحياء</option>
               </select>
             </div>
           </div>
@@ -233,7 +204,7 @@ export default function CoursesPage() {
             </p>
           </div>
 
-          {/* زر إعادة تعيين الفلاتر */}
+          {/* العداد */}
           <div className="mt-4 flex justify-between items-center">
             <p className="text-sm text-gray-600">
               {selectedGrade === 'sat' || selectedGrade === 'act' ? (
@@ -304,7 +275,6 @@ export default function CoursesPage() {
                 className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden"
               >
                 <div className="p-6">
-                  {/* الشارات */}
                   <div className="flex items-center justify-between mb-3">
                     <span className="px-3 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full">
                       {course.level === 'beginner' || course.level?.includes('general') ? 'عام' : 
@@ -314,18 +284,12 @@ export default function CoursesPage() {
                       {course.subject || 'عام'}
                     </span>
                   </div>
-
-                  {/* العنوان */}
                   <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">
                     {course.title}
                   </h3>
-
-                  {/* الوصف */}
                   <p className="text-gray-600 text-sm mb-4 line-clamp-2">
                     {course.description || 'وصف الكورس سيظهر هنا...'}
                   </p>
-
-                  {/* الفئة */}
                   {course.category && (
                     <div className="mb-4">
                       <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
@@ -333,8 +297,6 @@ export default function CoursesPage() {
                       </span>
                     </div>
                   )}
-
-                  {/* الفوتر */}
                   <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                     <span className="text-sm font-medium text-indigo-600">
                       ابدأ الآن ←

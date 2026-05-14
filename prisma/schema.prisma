@@ -1,75 +1,111 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
+// 1. إعدادات الـ Generator (توليد الكود)
 generator client {
   provider = "prisma-client-js"
 }
 
+// 2. إعدادات الداتابيز (مهم جداً: PostgreSQL لـ Neon)
 datasource db {
-  provider = "postgresql"
+  provider = "postgresql"  // ✅ غيرناها من sqlite لـ postgresql
   url      = env("DATABASE_URL")
 }
 
+// 3. موديل المستخدمين (User)
 model User {
   id            String    @id @default(cuid())
   name          String?
-  email         String    @unique
+  email         String?   @unique
   emailVerified DateTime?
   image         String?
   password      String?
-  role          String    @default("user")
+  role          String    @default("student") // student or admin
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   accounts      Account[]
   sessions      Session[]
-  courses       Course[] // ✅ علاقة صحيحة مع Course
+  courses       Course[]  @relation("CourseCreator")
+  examResults   ExamResult[]
 }
 
+// 4. موديل الكورسات (Course)
 model Course {
   id          String   @id @default(cuid())
   title       String
-  subject     String?
   description String?
+  subject     String?
   category    String?
   level       String   @default("beginner")
+  image       String?
   isPublished Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // ✅ العلاقة العكسية مع User (تم إصلاح مشكلة Missing relation)
-  userId      String?
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-
   lessons     Lesson[]
   exams       Exam[]
+  creator     User?    @relation("CourseCreator", fields: [creatorId], references: [id])
+  creatorId   String?
 }
 
+// 5. موديل الدروس (Lesson)
 model Lesson {
   id          String   @id @default(cuid())
   title       String
   description String?
   videoUrl    String?
+  duration    String?
   order       Int      @default(0)
+  completed   Boolean  @default(false)
   courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 }
 
+// 6. موديل الامتحانات (Exam)
 model Exam {
   id             String   @id @default(cuid())
   title          String
   subject        String?
-  duration       Int      @default(60)
-  totalQuestions Int      @default(10)
-  courseId       String?
+  duration       String?
+  totalQuestions Int      @default(0)
+  courseId       String
+  course         Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  questions      Question[]
+  results        ExamResult[]
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-
-  course         Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
 }
+
+// 7. موديل الأسئلة (Question)
+model Question {
+  id          String   @id @default(cuid())
+  text        String
+  options     String?  // بنخليها String عشان الـ migration script بتاعك
+  correct     String
+  explanation String?
+  examId      String
+  exam        Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// 8. موديل نتائج الامتحان (ExamResult)
+model ExamResult {
+  id        String   @id @default(cuid())
+  score     Float
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  examId    String
+  exam      Exam     @relation(fields: [examId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+// --- موديلات NextAuth (ضرورية لتسجيل الدخول) ---
 
 model Account {
   id                String  @id @default(cuid())
@@ -77,12 +113,12 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String?
-  access_token      String?
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String?
+  id_token          String? @db.Text
   session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

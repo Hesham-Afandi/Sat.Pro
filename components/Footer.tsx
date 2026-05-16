@@ -11,7 +11,7 @@ export default function Footer() {
         <div className="mb-6">
           <Logo className="w-20 h-20 mx-auto" />
         </div>
-        <p className="text-lg mb-2">SAT PRO</p>
+        <p className="text-lg mb-2">S𝑪𝒐𝒎𝒑𝒂𝒔𝒔 𝑨𝒄𝒂𝒅𝒆𝒎𝒚</p>
         <p className="text-sm">© 2026 {t("footer_rights")}</p>
         
         <div className="mt-6 flex justify-center gap-6">

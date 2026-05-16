@@ -13,13 +13,13 @@ export default function Logo({ className = "w-16 h-16", href }: LogoProps) {
     <>
       <Image 
         src="/logo.png" 
-        alt="SAT PRO Logo" 
+        alt="𝑪𝒐𝒎𝒑𝒂𝒔𝒔 𝑨𝒄𝒂𝒅𝒆𝒎𝒚 Logo" 
         width={64}
         height={64}
         className={className}
         priority
       />
-      <span className="font-bold text-xl hidden md:block text-gray-800">SAT PRO</span>
+      <span className="font-bold text-xl hidden md:block text-gray-800">𝑪𝒐𝒎𝒑𝒂𝒔𝒔 𝑨𝒄𝒂𝒅𝒆𝒎𝒚</span>
     </>
   );
 

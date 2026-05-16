@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import Link from "next/link";
+import Link from 'next/link';
 
 interface Course {
   id: string;
@@ -11,13 +11,15 @@ interface Course {
   category: string | null;
   level: string;
   isPublished: boolean;
+  lessons?: any[]; // 👈 عداد الدروس
+  exams?: any[];   // 👈 عداد الامتحانات
 }
 
 export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // الفلاتر
   const [selectedGrade, setSelectedGrade] = useState('all');
   const [selectedPath, setSelectedPath] = useState('all');
@@ -30,7 +32,6 @@ export default function CoursesPage() {
       try {
         const res = await fetch('/api/courses');
         const data = await res.json();
-        console.log('📦 Courses fetched:', data.length);
         setCourses(data);
         setLoading(false);
       } catch (error) {
@@ -43,32 +44,26 @@ export default function CoursesPage() {
 
   // تطبيق الفلاتر
   useEffect(() => {
-    console.log('🔍 Filtering... selectedGrade:', selectedGrade);
-    
     let filtered = [...courses];
 
-    // ⚠️ لو مش مختار SAT أو ACT، مظهرش الكورسات
+    // ⚠️ لا تعرض أي كورس إلا إذا تم اختيار SAT أو ACT
     if (selectedGrade !== 'sat' && selectedGrade !== 'act') {
-      console.log('❌ Not SAT/ACT - hiding courses');
       setFilteredCourses([]);
       return;
     }
 
     // فلتر SAT/ACT
     if (selectedGrade === 'sat' || selectedGrade === 'act') {
-      filtered = filtered.filter(course => {
-        const match = 
-          course.level?.toLowerCase().includes(selectedGrade) || 
-          course.category?.toLowerCase().includes(selectedGrade) ||
-          course.title?.toLowerCase().includes(selectedGrade);
-        console.log(`Course: ${course.title} - Match: ${match}`);
-        return match;
-      });
+      filtered = filtered.filter(course =>
+        course.level?.toLowerCase().includes(selectedGrade) ||
+        course.category?.toLowerCase().includes(selectedGrade) ||
+        course.title?.toLowerCase().includes(selectedGrade)
+      );
     }
 
     // فلتر المسار
     if (selectedPath !== 'all') {
-      filtered = filtered.filter(course => 
+      filtered = filtered.filter(course =>
         course.category?.toLowerCase().includes(selectedPath) ||
         course.level?.toLowerCase().includes(selectedPath)
       );
@@ -76,9 +71,7 @@ export default function CoursesPage() {
 
     // فلتر المادة
     if (selectedSubject !== 'all') {
-      filtered = filtered.filter(course => 
-        course.subject === selectedSubject
-      );
+      filtered = filtered.filter(course => course.subject === selectedSubject);
     }
 
     // البحث النصي
@@ -90,14 +83,13 @@ export default function CoursesPage() {
       );
     }
 
-    console.log('✅ Filtered courses:', filtered.length);
     setFilteredCourses(filtered);
   }, [selectedGrade, selectedPath, selectedSubject, searchQuery, courses]);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-2xl">جاري التحميل...</div>
+        <div className="text-2xl text-gray-500">جاري تحميل الكورسات...</div>
       </div>
     );
   }
@@ -107,12 +99,8 @@ export default function CoursesPage() {
       <div className="max-w-7xl mx-auto">
         {/* العنوان */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            الكورسات المتاحة
-          </h1>
-          <p className="text-lg text-gray-600">
-            اختر الكورس المناسب وابدأ رحلة التعلم
-          </p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">الكورسات المتاحة</h1>
+          <p className="text-lg text-gray-600">اختر الكورس المناسب وابدأ رحلة التعلم</p>
         </div>
 
         {/* الفلاتر */}
@@ -120,9 +108,7 @@ export default function CoursesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* البحث */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                🔍 ابحث عن كورس
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">🔍 ابحث عن كورس</label>
               <input
                 type="text"
                 value={searchQuery}
@@ -134,27 +120,13 @@ export default function CoursesPage() {
 
             {/* الصف */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                📚 الصف
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">📚 الصف</label>
               <select
                 value={selectedGrade}
                 onChange={(e) => setSelectedGrade(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
                 <option value="all">كل الصفوف</option>
-                <option value="grade1">الصف الأول</option>
-                <option value="grade2">الصف الثاني</option>
-                <option value="grade3">الصف الثالث</option>
-                <option value="grade4">الصف الرابع</option>
-                <option value="grade5">الصف الخامس</option>
-                <option value="grade6">الصف السادس</option>
-                <option value="grade7">الصف السابع</option>
-                <option value="grade8">الصف الثامن</option>
-                <option value="grade9">الصف التاسع</option>
-                <option value="grade10">الصف العاشر</option>
-                <option value="grade11">الحادي عشر</option>
-                <option value="grade12">الثاني عشر</option>
                 <option value="sat">SAT</option>
                 <option value="act">ACT</option>
               </select>
@@ -162,9 +134,7 @@ export default function CoursesPage() {
 
             {/* المسار */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                🎯 المسار
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">🎯 المسار</label>
               <select
                 value={selectedPath}
                 onChange={(e) => setSelectedPath(e.target.value)}
@@ -178,9 +148,7 @@ export default function CoursesPage() {
 
             {/* المادة */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                📖 المادة
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">📖 المادة</label>
               <select
                 value={selectedSubject}
                 onChange={(e) => setSelectedSubject(e.target.value)}
@@ -188,23 +156,14 @@ export default function CoursesPage() {
               >
                 <option value="all">كل المواد</option>
                 <option value="Math">الرياضيات</option>
-                <option value="English">اللغة الإنجليزية</option>
-                <option value="Arabic">اللغة العربية</option>
                 <option value="Physics">الفيزياء</option>
                 <option value="Chemistry">الكيمياء</option>
-                <option value="Biology">الأحياء</option>
+                <option value="English">اللغة الإنجليزية</option>
               </select>
             </div>
           </div>
 
-          {/* رسالة توضيحية */}
-          <div className="mt-4 p-4 bg-blue-50 border-r-4 border-blue-500 rounded-lg">
-            <p className="text-sm text-blue-800">
-              💡 <strong>ملاحظة:</strong> اختر <strong>SAT</strong> أو <strong>ACT</strong> من قائمة الصفوف لعرض الكورسات المتاحة
-            </p>
-          </div>
-
-          {/* العداد */}
+          {/* رسالة توضيحية + إعادة تعيين */}
           <div className="mt-4 flex justify-between items-center">
             <p className="text-sm text-gray-600">
               {selectedGrade === 'sat' || selectedGrade === 'act' ? (
@@ -231,40 +190,22 @@ export default function CoursesPage() {
           </div>
         </div>
 
-        {/* الكورسات */}
+        {/* عرض الكورسات */}
         {selectedGrade !== 'sat' && selectedGrade !== 'act' ? (
           <div className="bg-white rounded-2xl shadow-sm border-2 border-dashed border-gray-200 p-12 text-center">
             <div className="text-6xl mb-4">📋</div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">
-              اختر SAT أو ACT لعرض الكورسات
-            </h3>
-            <p className="text-gray-500 mb-4">
-              الكورسات متاحة فقط لاختبارات SAT و ACT
-            </p>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">اختر SAT أو ACT لعرض الكورسات</h3>
+            <p className="text-gray-500 mb-4">الكورسات متاحة فقط لاختبارات SAT و ACT</p>
             <div className="flex justify-center gap-4 mt-6">
-              <button
-                onClick={() => setSelectedGrade('sat')}
-                className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-bold"
-              >
-                عرض كورسات SAT
-              </button>
-              <button
-                onClick={() => setSelectedGrade('act')}
-                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-bold"
-              >
-                عرض كورسات ACT
-              </button>
+              <button onClick={() => setSelectedGrade('sat')} className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-bold">عرض كورسات SAT</button>
+              <button onClick={() => setSelectedGrade('act')} className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-bold">عرض كورسات ACT</button>
             </div>
           </div>
         ) : filteredCourses.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-sm border-2 border-dashed border-gray-200 p-12 text-center">
             <div className="text-6xl mb-4">📚</div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">
-              لا توجد كورسات مطابقة للبحث
-            </h3>
-            <p className="text-gray-500">
-              جرب تغيير الفلاتر أو ابحث عن شيء آخر
-            </p>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">لا توجد كورسات مطابقة</h3>
+            <p className="text-gray-500">جرب تغيير الفلاتر أو ابحث عن شيء آخر</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -275,35 +216,36 @@ export default function CoursesPage() {
                 className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden"
               >
                 <div className="p-6">
+                  {/* الشارات */}
                   <div className="flex items-center justify-between mb-3">
                     <span className="px-3 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full">
-                      {course.level === 'beginner' || course.level?.includes('general') ? 'عام' : 
-                       course.level?.includes('advanced') ? 'متقدم' : 'متخصص'}
+                      {course.level === 'beginner' ? 'مبتدئ' : course.level === 'intermediate' ? 'متوسط' : 'متقدم'}
                     </span>
-                    <span className="text-sm text-gray-500">
-                      {course.subject || 'عام'}
-                    </span>
+                    <span className="text-sm text-gray-500">{course.subject || 'عام'}</span>
                   </div>
+
+                  {/* العنوان والوصف */}
                   <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">
                     {course.title}
                   </h3>
                   <p className="text-gray-600 text-sm mb-4 line-clamp-2">
                     {course.description || 'وصف الكورس سيظهر هنا...'}
                   </p>
-                  {course.category && (
-                    <div className="mb-4">
-                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                        {course.category}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                    <span className="text-sm font-medium text-indigo-600">
-                      ابدأ الآن ←
+
+                  {/* ✅ عداد الدروس والامتحانات */}
+                  <div className="flex items-center gap-4 text-sm text-gray-500 mb-4 border-t border-gray-100 pt-3">
+                    <span className="flex items-center gap-1">
+                      📚 <span className="font-bold text-indigo-600">{course.lessons?.length || 0}</span> درس
                     </span>
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      course.isPublished ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                    }`}>
+                    <span className="flex items-center gap-1">
+                       <span className="font-bold text-green-600">{course.exams?.length || 0}</span> امتحان
+                    </span>
+                  </div>
+
+                  {/* الفوتر */}
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                    <span className="text-sm font-medium text-indigo-600">ابدأ الآن ←</span>
+                    <span className={`text-xs px-2 py-1 rounded ${course.isPublished ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
                       {course.isPublished ? 'منشور' : 'مسودة'}
                     </span>
                   </div>

@@ -7,8 +7,8 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'منصة SAT Pro',
-  description: 'احصل على درجة SAT أحلامك',
+  title: '𝑪𝒐𝒎𝒑𝒂𝒔𝒔 𝑨𝒄𝒂𝒅𝒆𝒎𝒚',
+  description: 'احصل على درجتك الكاملة',
 }
 
 export default function RootLayout({
